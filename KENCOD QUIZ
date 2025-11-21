@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KENCOD Quiz — Fun Colorful</title>
+<style>
+  /* Fun Colorful Theme — big buttons, playful UI */
+  :root{
+    --bg1: #fff7ed; --bg2:#fffbeb;
+    --card:#ffffff; --text:#0b1220; --muted:#6b7280;
+    --accentA:#ff6b6b; --accentB:#ffd166; --accentC:#6ee7b7; --accentD:#7dd3fc;
+    --shadow: 0 12px 30px rgba(10,10,20,0.08);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:var(--text); -webkit-font-smoothing:antialiased; padding:18px;
+    display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:960px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px}
+  .brand{display:flex; gap:12px; align-items:center}
+  .logo{
+    width:64px; height:64px; border-radius:14px;
+    background: linear-gradient(135deg,var(--accentA),var(--accentC));
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:30px; box-shadow:var(--shadow)
+  }
+  h1{margin:0;font-size:18px}
+  .tag{font-size:13px;color:var(--muted)}
+  .card{background:var(--card); padding:16px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(0,0,0,0.03)}
+  .controls{display:flex; gap:8px; align-items:center}
+  .small{font-size:13px;color:var(--muted)}
+
+  /* Setup */
+  .levels{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .level-btn{
+    padding:10px 14px;border-radius:12px;border:2px solid transparent;background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+    cursor:pointer;font-weight:700;color:var(--text); transition:all .16s ease;
+  }
+  .level-btn.locked{opacity:.45; text-decoration:line-through; cursor:not-allowed}
+  .level-btn.selected{border-color:rgba(0,0,0,0.06); box-shadow: 0 8px 20px rgba(0,0,0,0.04)}
+
+  .start-row{display:flex; gap:10px; align-items:center; margin-top:12px}
+  .start-btn{padding:10px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accentB),var(--accentD)); color:#022; font-weight:800; cursor:pointer}
+
+  /* Quiz area */
+  .quiz-area{display:none;margin-top:12px}
+  .meta{display:flex;align-items:center;justify-content:space-between; gap:10px}
+  .qcard{margin-top:12px;padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.97)); border:1px solid rgba(0,0,0,0.02)}
+  .question{font-size:18px;font-weight:800;margin-bottom:12px}
+  .answers{display:grid; gap:12px; grid-template-columns:1fr}
+  @media(min-width:700px){ .answers{grid-template-columns:1fr 1fr} }
+  .answer-btn{
+    padding:16px;border-radius:12px;border:0; font-weight:800; font-size:16px;
+    cursor:pointer; text-align:left; transition: transform .12s ease, box-shadow .12s ease;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.85));
+    box-shadow: 0 6px 18px rgba(12,12,25,0.06);
+  }
+  .answer-btn:active{transform:translateY(2px)}
+  .answer-btn.correct{box-shadow: 0 14px 30px rgba(34,197,94,0.12); outline:4px solid rgba(34,197,94,0.08)}
+  .answer-btn.wrong{box-shadow: 0 14px 30px rgba(239,68,68,0.08); outline:4px solid rgba(239,68,68,0.06); opacity:0.95}
+  .timer{min-width:64px;text-align:center;padding:8px 12px;border-radius:999px;background:linear-gradient(90deg,var(--accentC),var(--accentD)); color:#012; font-weight:900}
+  .progress{height:8px;background:rgba(0,0,0,0.04); border-radius:999px; overflow:hidden; width:160px}
+  .progress > i{display:block;height:100%; background:linear-gradient(90deg,var(--accentA),var(--accentC)); width:0% }
+
+  .footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px}
+  .ghost{background:transparent;border:1px solid rgba(0,0,0,0.04); padding:10px 12px;border-radius:12px; cursor:pointer}
+
+  /* results */
+  .results{display:none;margin-top:12px}
+  .result-score{font-size:34px;font-weight:900}
+  .leaderboard{margin-top:12px; max-height:300px; overflow:auto}
+
+  /* small helpers */
+  .hide{display:none}
+  .center{display:flex;align-items:center;justify-content:center}
+  .fade{animation:fadeIn .18s ease both}
+  @keyframes fadeIn { from {opacity:0; transform:translateY(6px)} to {opacity:1; transform:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">K</div>
+      <div>
+        <h1>KENCOD Quiz</h1>
+        <div class="tag">Fun Colorful — KK TECHNOLOGIES UG</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="small">Have fun & share!</div>
+    </div>
+  </header>
+
+  <!-- Setup -->
+  <section class="card fade" id="setupCard">
+    <div class="small">Choose Level</div>
+    <div class="levels" id="levels"></div>
+
+    <div class="start-row">
+      <div class="small">Questions</div>
+      <select id="qCount" style="padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,0.06)">
+        <option value="5">5</option>
+        <option value="7">7</option>
+        <option value="10" selected>10</option>
+      </select>
+
+      <div style="flex:1"></div>
+      <button id="startBtn" class="start-btn">Start Quiz</button>
+    </div>
+    <div class="small" style="margin-top:10px">Tip: Score ≥ 60% to unlock the next level.</div>
+  </section>
+
+  <!-- Quiz -->
+  <section class="card quiz-area fade" id="quizCard">
+    <div class="meta">
+      <div class="small">Level: <strong id="levelName">Beginner</strong> — Q <span id="curIdx">1</span>/<span id="totalQ">10</span></div>
+      <div style="display:flex; gap:10px; align-items:center">
+        <div class="timer" id="timerDisplay">00s</div>
+        <div class="progress"><i id="progressBar"></i></div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="question" id="questionText">Question text</div>
+      <div class="answers" id="answers"></div>
+    </div>
+
+    <div class="footer">
+      <div class="small" id="scoreBox">Score: 0</div>
+      <div>
+        <button id="quitBtn" class="ghost">Quit</button>
+        <button id="nextBtn" class="ghost hide">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="card results fade" id="resultCard">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+      <div>
+        <div class="small">Your Result</div>
+        <div class="result-score" id="percentDisplay">0%</div>
+        <div class="small" id="resultMsg">Nice try!</div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Score</div>
+        <div style="font-weight:900" id="scoreDisplay">0/0</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:8px; align-items:center; justify-content:space-between">
+      <div>
+        <button id="playAgain" class="start-btn">Play Again</button>
+        <button id="shareBtn" class="start-btn" style="background:linear-gradient(90deg,var(--accentC),var(--accentD))">Share Score</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input id="playerName" placeholder="Name to save" style="padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,0.06)"/>
+        <button id="saveScore" class="ghost">Save</button>
+      </div>
+    </div>
+
+    <div class="leaderboard" id="leaderboardArea"></div>
+  </section>
+</div>
+
+<script>
+/* =========================
+  Quiz data (editable)
+========================= */
+const QUIZZES = {
+  beginner: {
+    name:'Beginner', timePerQ:20,
+    questions:[
+      { q:'What does HTML stand for?', choices:['Hyperlinks and Text Markup Language','Home Tool Markup Language','Hyper Text Markup Language','Hyperlinking Text Mark Language'], a:2 },
+      { q:'Which tag makes text bold?', choices:['<i>','<b>','<p>','<link>'], a:1 },
+      { q:'2 + 2 = ?', choices:['3','4','22','5'], a:1 },
+      { q:'Capital of Uganda?', choices:['Mbarara','Kampala','Jinja','Iganga'], a:1 },
+      { q:'Which is a programming language?', choices:['HTML','CSS','JavaScript','HTTP'], a:2 },
+      { q:'What color are bananas usually?', choices:['Blue','Yellow','Red','Green'], a:1 }
+    ]
+  },
+  intermediate: {
+    name:'Intermediate', timePerQ:18,
+    questions:[
+      { q:'What is CSS for?', choices:['Structure','Styling','Database','Hosting'], a:1 },
+      { q:'Who made Android?', choices:['Apple','Google','Microsoft','Nokia'], a:1 },
+      { q:'Binary of 5?', choices:['101','110','011','100'], a:0 },
+      { q:'HTTP stands for?', choices:['HyperText Transfer Protocol','HighText Transfer Protocol','Hyperlink Transfer Protocol','Hyper Tool Transfer Prog'], a:0 },
+      { q:'Which is not an array method in JS?', choices:['map','filter','push','connect'], a:3 }
+    ]
+  },
+  advanced: {
+    name:'Advanced', timePerQ:15,
+    questions:[
+      { q:'Which uses FIFO?', choices:['Stack','Queue','Tree','Graph'], a:1 },
+      { q:'Big O of binary search?', choices:['O(n)','O(log n)','O(n^2)','O(1)'], a:1 },
+      { q:'SQL clause that filters rows?', choices:['ORDER BY','WHERE','GROUP BY','HAVING'], a:1 },
+      { q:'C++ is known for?', choices:['Database','Low-level control & performance','Design','Style'], a:1 },
+      { q:'Secure web protocol?', choices:['HTTP','FTP','SMTP','HTTPS'], a:3 }
+    ]
+  },
+  expert: {
+    name:'Expert', timePerQ:12,
+    questions:[
+      { q:'Common blockchain algorithm?', choices:['TCP','PoW','SSL','HTTP'], a:1 },
+      { q:'GPU stands for?', choices:['General Processing Unit','Graphical Processing Unit','Graphics Performance Unit','General Purpose Unit'], a:1 },
+      { q:'Functional programming concept?', choices:['Mutation','Immutability','Looping','Pointers'], a:1 },
+      { q:'Language that influenced Rust?', choices:['JavaScript','C++','Haskell','Bash'], a:2 },
+      { q:'Managed languages memory?', choices:['Manual free','Garbage collected','No memory','Always unsafe'], a:1 }
+    ]
+  }
+};
+
+/* =========================
+  Elements & state
+========================= */
+const levelsEl = document.getElementById('levels');
+const startBtn = document.getElementById('startBtn');
+const qCount = document.getElementById('qCount');
+const setupCard = document.getElementById('setupCard');
+const quizCard = document.getElementById('quizCard');
+const resultCard = document.getElementById('resultCard');
+const levelName = document.getElementById('levelName');
+const curIdx = document.getElementById('curIdx');
+const totalQ = document.getElementById('totalQ');
+const timerDisplay = document.getElementById('timerDisplay');
+const progressBar = document.getElementById('progressBar');
+const questionText = document.getElementById('questionText');
+const answers = document.getElementById('answers');
+const nextBtn = document.getElementById('nextBtn');
+const quitBtn = document.getElementById('quitBtn');
+const scoreBox = document.getElementById('scoreBox');
+const percentDisplay = document.getElementById('percentDisplay');
+const resultMsg = document.getElementById('resultMsg');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const playAgain = document.getElementById('playAgain');
+const shareBtn = document.getElementById('shareBtn');
+const playerName = document.getElementById('playerName');
+const saveScore = document.getElementById('saveScore');
+const leaderboardArea = document.getElementById('leaderboardArea');
+
+let state = {
+  levelKey: 'beginner',
+  questions: [],
+  shuffled: [],
+  idx: 0,
+  total: 10,
+  score: 0,
+  playing: false,
+  timer: null,
+  timeLeft: 0,
+  timePerQ: 20
+};
+
+/* ================
+  Utilities
+================= */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
+function loadUnlocks(){ const s = localStorage.getItem('kencod_unlocks'); if(!s){ const def={beginner:true, intermediate:false, advanced:false, expert:false}; localStorage.setItem('kencod_unlocks', JSON.stringify(def)); return def } return JSON.parse(s) }
+function saveUnlocks(u){ localStorage.setItem('kencod_unlocks', JSON.stringify(u)) }
+function formatSec(s){ return `${Math.ceil(s)}s` }
+
+/* ================
+  Sounds (WebAudio)
+================= */
+const AC = window.AudioContext ? new window.AudioContext() : null;
+function beep(freq=700, dur=0.09, vol=0.06, type='sine'){ if(!AC) return; const o=AC.createOscillator(), g=AC.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+dur); }
+
+/* ================
+  Render levels
+================= */
+function renderLevels(){
+  levelsEl.innerHTML='';
+  const unlocks = loadUnlocks();
+  Object.keys(QUIZZES).forEach(k=>{
+    const btn = document.createElement('button');
+    btn.className='level-btn';
+    btn.textContent = QUIZZES[k].name;
+    if(k===state.levelKey) btn.classList.add('selected');
+    if(!unlocks[k]) { btn.classList.add('locked'); }
+    btn.addEventListener('click', ()=>{
+      if(!unlocks[k]) { alert('Complete earlier levels to unlock this level.'); return; }
+      state.levelKey = k;
+      document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    levelsEl.appendChild(btn);
+  });
+}
+renderLevels();
+
+/* ================
+  Start quiz
+================= */
+startBtn.addEventListener('click', ()=>{
+  const lvl = QUIZZES[state.levelKey];
+  const cnt = Math.min(parseInt(qCount.value,10) || 10, lvl.questions.length);
+  const pool = lvl.questions.slice(); shuffle(pool);
+  const selected = pool.slice(0, cnt);
+  state.questions = selected;
+  state.shuffled = shuffle(selected.map((q,i)=>({ ...q, orig:i })));
+  state.idx = 0; state.total = selected.length; state.score = 0; state.playing=true;
+  state.timePerQ = lvl.timePerQ || 15;
+  setupCard.style.display='none'; quizCard.style.display='block'; resultCard.style.display='none';
+  levelName.textContent = lvl.name; totalQ.textContent = state.total; updateScore();
+  renderQuestion();
+});
+
+/* ================
+  Render question
+================= */
+function renderQuestion(){
+  const cur = state.shuffled[state.idx];
+  curIdx.textContent = state.idx + 1;
+  questionText.textContent = cur.q; // safe text rendering
+  answers.innerHTML = '';
+  // create big buttons; preserve mapping using data-choice attribute
+  const choices = cur.choices.map((c,i)=>({text:c, idx:i}));
+  shuffle(choices).forEach(ch=>{
+    const b = document.createElement('button');
+    b.className = 'answer-btn fade';
+    b.textContent = ch.text; // safe
+    b.setAttribute('data-choice', ch.idx);
+    b.addEventListener('click', ()=> selectAnswer(b, ch.idx));
+    answers.appendChild(b);
+  });
+  nextBtn.classList.add('hide');
+  startTimer(state.timePerQ);
+}
+
+/* ================
+  Timer
+================= */
+function startTimer(sec){
+  clearInterval(state.timer);
+  state.timeLeft = sec; updateTimer();
+  state.timer = setInterval(()=> {
+    state.timeLeft -= 0.2;
+    if(state.timeLeft <= 0){ clearInterval(state.timer); state.timeLeft = 0; updateTimer(); timeExpired(); }
+    else updateTimer();
+  }, 200);
+}
+function updateTimer(){
+  timerDisplay.textContent = formatSec(state.timeLeft);
+  const pct = Math.max(0, (state.timeLeft / state.timePerQ) * 100);
+  progressBar.style.width = pct + '%';
+}
+
+/* ================
+  When time expires
+================= */
+function timeExpired(){
+  revealCorrect();
+  beep(220,0.12,0.08,'sawtooth');
+  nextBtn.classList.remove('hide');
+}
+
+/* ================
+  Select answer
+================= */
+function selectAnswer(btn, chosenIdx){
+  if(!state.playing) return;
+  clearInterval(state.timer);
+  const cur = state.shuffled[state.idx];
+  const correct = cur.a;
+  // disable all buttons
+  const all = Array.from(document.querySelectorAll('.answer-btn'));
+  all.forEach(x=>x.disabled=true);
+  // highlight correct
+  all.forEach(x=>{
+    const c = parseInt(x.getAttribute('data-choice'),10);
+    if(c === correct) x.classList.add('correct');
+  });
+  // mark chosen
+  if(chosenIdx === correct){
+    btn.classList.add('correct');
+    state.score++;
+    updateScore();
+    beep(880,0.12,0.06,'sine');
+  } else {
+    btn.classList.add('wrong');
+    beep(200,0.16,0.09,'sawtooth');
+  }
+  nextBtn.classList.remove('hide');
+}
+
+/* reveal correct helper */
+function revealCorrect(){
+  const cur = state.shuffled[state.idx];
+  const all = Array.from(document.querySelectorAll('.answer-btn'));
+  all.forEach(b=>{
+    const c = parseInt(b.getAttribute('data-choice'),10);
+    if(c === cur.a) b.classList.add('correct');
+    b.disabled = true;
+  });
+}
+
+/* ================
+  Next / Quit / Finish
+================= */
+nextBtn.addEventListener('click', ()=>{
+  state.idx++;
+  if(state.idx >= state.total) finishQuiz();
+  else renderQuestion();
+});
+quitBtn.addEventListener('click', ()=>{
+  if(confirm('Quit quiz and return to menu?')) resetToSetup();
+});
+
+function finishQuiz(){
+  state.playing = false; clearInterval(state.timer);
+  quizCard.style.display='none'; resultCard.style.display='block';
+  const pct = Math.round((state.score / state.total) * 100);
+  percentDisplay.textContent = pct + '%';
+  scoreDisplay.textContent = `${state.score}/${state.total}`;
+  resultMsg.textContent = pct >= 90 ? 'Excellent!' : pct >= 70 ? 'Great job!' : pct >= 40 ? 'Good effort' : 'Keep practicing';
+  // unlock
+  if(pct >= 60) unlockNext();
+}
+
+/* ================
+  Unlock next level
+================= */
+function unlockNext(){
+  const keys = Object.keys(QUIZZES);
+  const i = keys.indexOf(state.levelKey);
+  if(i < keys.length - 1){
+    const next = keys[i+1];
+    const unlocks = loadUnlocks();
+    if(!unlocks[next]){ unlocks[next]=true; saveUnlocks(unlocks); alert('Unlocked ' + QUIZZES[next].name + '!'); renderLevels(); }
+  }
+}
+
+/* ================
+  Reset
+================= */
+function resetToSetup(){
+  clearInterval(state.timer);
+  state.playing=false; quizCard.style.display='none'; resultCard.style.display='none'; setupCard.style.display='block';
+}
+
+/* ================
+  Score / Leaderboard (local)
+================= */
+function updateScore(){ scoreBox.textContent = 'Score: ' + state.score; }
+function loadBoard(){ return JSON.parse(localStorage.getItem('kencod_board') || '[]'); }
+function saveBoard(a){ localStorage.setItem('kencod_board', JSON.stringify(a)); }
+saveScore.addEventListener('click', ()=>{
+  const name = (playerName.value || 'Anonymous').trim();
+  if(!name) { alert('Enter a name'); return; }
+  const entry = { name, score: state.score, total: state.total, pct: Math.round((state.score/state.total)*100), level: QUIZZES[state.levelKey].name, date: new Date().toISOString() };
+  const arr = loadBoard(); arr.push(entry); arr.sort((a,b)=> b.pct - a.pct || (new Date(b.date) - new Date(a.date))); if(arr.length>20) arr.splice(20);
+  saveBoard(arr); renderBoard(); alert('Saved!');
+});
+function renderBoard(){
+  const arr = loadBoard();
+  if(arr.length === 0){ leaderboardArea.innerHTML = '<div class="small">No scores yet.</div>'; return; }
+  let html = '<table style="width:100%;border-collapse:collapse"><thead><tr><th>#</th><th>Name</th><th>Score</th><th>%</th><th>Level</th></tr></thead><tbody>';
+  arr.forEach((r,i)=> html += `<tr><td style="padding:6px">${i+1}</td><td style="padding:6px">${escapeHtml(r.name)}</td><td style="padding:6px">${r.score}/${r.total}</td><td style="padding:6px">${r.pct}%</td><td style="padding:6px">${escapeHtml(r.level)}</td></tr>`);
+  html += '</tbody></table>';
+  leaderboardArea.innerHTML = html;
+}
+playAgain.addEventListener('click', ()=> resetToSetup());
+
+/* ================
+  Share
+================= */
+shareBtn.addEventListener('click', async ()=>{
+  const pct = Math.round((state.score/state.total)*100);
+  const text = `I scored ${state.score}/${state.total} (${pct}%) on KENCOD Quiz! Try it: https://bit.ly/4ocGle9`;
+  if(navigator.share){
+    try{ await navigator.share({ title:'KENCOD Quiz', text, url:'https://bit.ly/4ocGle9' }); return; }catch(e){}
+  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+});
+
+/* ================
+  Helpers
+================= */
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+/* Warm audio on user gesture */
+document.addEventListener('click', function warm(){ if(AC && AC.state === 'suspended') AC.resume(); document.removeEventListener('click', warm); });
+
+/* Keyboard shortcuts */
+document.addEventListener('keydown', (e)=>{ if(e.key==='n' && !nextBtn.classList.contains('hide')) nextBtn.click(); if(e.key==='Escape') resetToSetup(); });
+
+/* Initialize defaults */
+(function init(){
+  renderLevels();
+  // ensure unlocks exist
+  loadUnlocks();
+})();
+</script>
+</body>
+</html>
